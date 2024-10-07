@@ -1,4 +1,8 @@
+const express = require('express');
 const { Worker } = require('worker_threads');
+
+const app = express();
+const port = 3000;
 
 // Função para criar um novo worker
 function runWorker(file) {
@@ -14,7 +18,24 @@ function runWorker(file) {
   });
 }
 
-async function main() {
+// Implementação de Bubble Sort
+function bubbleSort(arr) {
+  let n = arr.length;
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < n - 1 - i; j++) {
+      if (arr[j] > arr[j + 1]) {
+        // Troca os elementos
+        let temp = arr[j];
+        arr[j] = arr[j + 1];
+        arr[j + 1] = temp;
+      }
+    }
+  }
+  return arr;
+}
+
+// Função principal que será chamada no endpoint
+async function calculate() {
   try {
     // Criando os dois workers
     const primePromise = runWorker('./primeWorker.js');
@@ -23,37 +44,49 @@ async function main() {
     // Esperando o resultado de ambos os workers
     const [primes, randomList] = await Promise.all([primePromise, randomListPromise]);
 
-    console.log(`Primeiros 100.000 números primos calculados.`);
-    console.log(`Lista de números aleatórios até 2.000.000 gerada.`);
+    // Ordenar a lista de números aleatórios com Bubble Sort
+    bubbleSort(randomList);
 
-    // Ordenar a lista de primos do maior para o menor
-    const sortedPrimes = primes.sort((a, b) => b - a);
-
-    // Função de busca binária
-    function binarySearch(arr, target) {
+    // Função de busca binária para encontrar a posição de inserção
+    function findInsertPosition(arr, target) {
       let left = 0;
-      let right = arr.length - 1;
-      
-      while (left <= right) {
+      let right = arr.length;
+
+      while (left < right) {
         const mid = Math.floor((left + right) / 2);
-        if (arr[mid] === target) return mid;
-        if (arr[mid] < target) left = mid + 1;
-        else right = mid - 1;
+        if (arr[mid] < target) {
+          left = mid + 1; // Continua a busca na metade direita
+        } else {
+          right = mid; // Continua a busca na metade esquerda
+        }
       }
-      
-      return -1; // Se o número primo não estiver na lista
+
+      return left; // Retorna a posição de inserção
     }
 
-    // Verificar onde os números primos estão na lista
-    const primePositions = sortedPrimes.map(prime => ({
+    // Verificar onde os números primos ficariam na lista
+    const primePositions = primes.map(prime => ({
       prime,
-      position: binarySearch(randomList, prime)
+      position: findInsertPosition(randomList, prime)
     }));
 
-    console.log(primePositions);
+    return primePositions;
   } catch (err) {
-    console.error(err);
+    throw new Error(err);
   }
 }
 
-main();
+// Rota que dispara o cálculo
+app.get('/calculate', async (req, res) => {
+  try {
+    const result = await calculate();
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Iniciar o servidor
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
