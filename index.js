@@ -77,7 +77,7 @@ async function calculate() {
 }
 
 // Rota que dispara o cálculo
-app.get('/calculate', async (req, res) => {
+app.get('/so', async (req, res) => {
   try {
     const result = await calculate();
     res.json(result);
