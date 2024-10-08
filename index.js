@@ -37,12 +37,17 @@ function bubbleSort(arr) {
 // Função principal que será chamada no endpoint
 async function calculate() {
   try {
-    // Criando os dois workers
+    // Criando os três workers: primos, lista aleatória, e memória
     const primePromise = runWorker('./primeWorker.js');
     const randomListPromise = runWorker('./randomWorker.js');
+    const memoryStressPromise = runWorker('./memoryWorker.js'); // Adiciona o worker de memória
 
-    // Esperando o resultado de ambos os workers
-    const [primes, randomList] = await Promise.all([primePromise, randomListPromise]);
+    // Esperar o resultado de todos os workers
+    const [primes, randomList, memoryResult] = await Promise.all([
+      primePromise,
+      randomListPromise,
+      memoryStressPromise
+    ]);
 
     // Ordenar a lista de números aleatórios com Bubble Sort
     bubbleSort(randomList);
@@ -70,7 +75,8 @@ async function calculate() {
       position: findInsertPosition(randomList, prime)
     }));
 
-    return primePositions;
+    // Retorna os resultados, incluindo o preenchimento de memória
+    return { primePositions, memoryResult };
   } catch (err) {
     throw new Error(err);
   }
