@@ -1,16 +1,27 @@
 const { parentPort } = require('worker_threads');
 
-function stressMemory(sizeInMB) {
+function stressMemory(sizeInMB, durationInSeconds) {
   const memoryBlocks = [];
   const blockSize = 1024 * 1024; // 1MB por bloco
-  
-  for (let i = 0; i < sizeInMB; i++) {
-    memoryBlocks.push(Buffer.alloc(blockSize, 'a')); // Aloca 1MB de memória
-  }
 
-  // Mantém os dados na memória para impedir que o GC libere
-  parentPort.postMessage({ status: 'Memory allocated', size: sizeInMB });
+  // Função que aloca memória em intervalos
+  const interval = setInterval(() => {
+    for (let i = 0; i < sizeInMB; i++) {
+      memoryBlocks.push(Buffer.alloc(blockSize, 'a')); // Aloca 1MB de memória
+    }
+
+    parentPort.postMessage({ status: 'Memory allocated', size: memoryBlocks.length });
+
+  }, 1000); // Preenche 5GB de memória a cada segundo
+
+  // Finaliza o processo de alocação após a duração especificada
+  setTimeout(() => {
+    clearInterval(interval);
+    parentPort.postMessage({ status: 'Memory allocation completed', size: memoryBlocks.length });
+  }, durationInSeconds * 1000); // Duração total em segundos
 }
 
-const sizeInMB = 5000; // Defina a quantidade de memória para alocar (5GB)
-stressMemory(sizeInMB);
+// Exemplo: Preencher 500MB por 30 segundos (ajustável)
+const sizeInMB = 500;
+const durationInSeconds = 30;
+stressMemory(sizeInMB, durationInSeconds);
