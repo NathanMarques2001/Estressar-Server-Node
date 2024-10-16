@@ -1,4 +1,4 @@
-const { parentPort } = require('worker_threads');
+const { parentPort, workerData } = require('worker_threads');
 
 function generatePrimes(limit) {
   const primes = [];
@@ -17,5 +17,6 @@ function isPrime(num) {
   return num > 1;
 }
 
-const primes = generatePrimes(100000); // Calcula os primeiros 100.000 primos
+// Use o limite passado pelos dados do worker
+const primes = generatePrimes(workerData.limit); 
 parentPort.postMessage(primes);
